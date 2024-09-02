@@ -19,12 +19,42 @@ const PromptCardList = ({ data, handleTagClick }) => {
 };
 
 const Feed = () => {
-  const [searchText, setSearchText] = useState("");
   const [posts, setPosts] = useState([]);
+  // Search
+  const [searchText, setSearchText] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState(null);
+  const [filteredPosts, setFilteredPosts] = useState([]);
 
-  const handleSearchChange = (e) => {};
+  const updatePosts = (searchtext) => {
+    const regex = new RegExp(searchtext, "i");
+    const newPosts = posts.filter(
+      (item) =>
+        regex.test(item.creator.username) ||
+        regex.test(item.promptme) ||
+        regex.test(item.tag)
+    );
 
-  const handleTagClick = (tagName) => {};
+    return newPosts;
+  };
+
+  const handleSearchChange = (e) => {
+    clearTimeout(searchTimeout);
+    setSearchText(e.target.value);
+
+    // debounce method
+    setSearchTimeout(
+      setTimeout(() => {
+        const searchResult = updatePosts(e.target.value);
+        setFilteredPosts(searchResult);
+      }, 500)
+    );
+  };
+
+  const handleTagClick = (tagName) => {
+    setSearchText(tagName);
+    const searchResults = updatePosts(tagName);
+    setFilteredPosts(searchResults);
+  };
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -35,6 +65,7 @@ const Feed = () => {
         }
         const data = await response.json();
         setPosts(data);
+        setFilteredPosts(data);
       } catch (error) {
         console.error("Error fetching posts:", error);
       }
@@ -54,7 +85,7 @@ const Feed = () => {
           className="search_input peer"
         />
       </form>
-      <PromptCardList data={posts} handleTagClick={handleTagClick} />
+      <PromptCardList data={filteredPosts} handleTagClick={handleTagClick} />
     </section>
   );
 };
